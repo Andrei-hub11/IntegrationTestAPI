@@ -1,0 +1,7 @@
+﻿CREATE TABLE Employees (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    Name NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(100) NOT NULL,
+    Position NVARCHAR(100) NOT NULL,
+    Salary DECIMAL(18, 2) NOT NULL
+);
