@@ -35,20 +35,17 @@ public class AppHostFixture : IAsyncLifetime
             .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(MsSqlPort))
             .Build();
 
-        // Start Container
         await _container.StartAsync();
 
         var sqlFilePath = SetupPath;
 
-        // Verifique se o arquivo existe
         if (!File.Exists(sqlFilePath))
         {
             throw new FileNotFoundException("SQL initialization script not found.", sqlFilePath);
         }
 
-        // Replace connection string in DbContext
         var connectionString = GetConnectionString();
-        // Ensure the database exists
+        
         await CreateDatabaseIfNotExistsAsync(connectionString);
         await InitializeDatabaseAsync(connectionString, SetupPath);
 
@@ -67,7 +64,7 @@ public class AppHostFixture : IAsyncLifetime
 
                    if (string.IsNullOrWhiteSpace(connectionString))
                    {
-                       throw new InvalidOperationException("A conexão com o banco de dados não pode ser vazia.");
+                       throw new InvalidOperationException("The database connection cannot be empty.");
                    }
 
                    config.AddInMemoryCollection(new List<KeyValuePair<string, string?>>
@@ -93,7 +90,6 @@ public class AppHostFixture : IAsyncLifetime
 
     private async Task CreateDatabaseIfNotExistsAsync(string connectionString)
     {
-        // Conecte-se ao banco de dados master para criar o banco de dados
         var masterConnectionString = connectionString.Replace($"Database={Database};", "Database=master;");
 
         using var masterConnection = new SqlConnection(masterConnectionString);
@@ -144,5 +140,6 @@ public class AppHostFixture : IAsyncLifetime
         using var command = new SqlCommand(deleteDatabaseCommand, masterConnection);
         await command.ExecuteNonQueryAsync();
         await _container.StopAsync();
+        await _container.DisposeAsync();
     }
 }

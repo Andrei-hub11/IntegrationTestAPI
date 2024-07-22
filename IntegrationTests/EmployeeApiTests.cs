@@ -60,6 +60,45 @@ public class EmployeeApiTests : IClassFixture<AppHostFixture>, IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetEmployeeById_ShouldReturnEmployee_WhenEmployeeExists()
+    {
+        // Arrange
+        var createEmployeeDto = new CreateEmployeeRequestDTO("John Doe", "john.doe@example.com", "Developer", 60000);
+
+        var postResponse = await _client.PostAsJsonAsync("https://localhost:7033/api/v1", createEmployeeDto);
+        postResponse.EnsureSuccessStatusCode();
+
+        var employeesResponse = await _client.GetAsync("https://localhost:7033/api/v1");
+        employeesResponse.EnsureSuccessStatusCode();
+        var employees = await employeesResponse.Content.ReadFromJsonAsync<List<EmployeeResponseDTO>>();
+
+        ThrowHelper.ThrowIfNull(employees);
+
+        var employee = employees.SingleOrDefault(e => e.Name == "John Doe");
+        Assert.NotNull(employee);
+
+        var response = await _client.GetAsync($"https://localhost:7033/api/v1/{employee.Id}");
+
+        response.EnsureSuccessStatusCode();
+        var employeeDto = await response.Content.ReadFromJsonAsync<EmployeeResponseDTO>();
+
+        Assert.NotNull(employeeDto);
+        Assert.Equal(employee.Id, employeeDto.Id);
+        Assert.Equal(employee.Name, employeeDto.Name);
+        Assert.Equal(employee.Email, employeeDto.Email);
+        Assert.Equal(employee.Position, employeeDto.Position);
+        Assert.Equal(employee.Salary, employeeDto.Salary);
+    }
+
+    [Fact]
+    public async Task GetEmployeeById_ShouldReturnNotFound_WhenEmployeeDoesNotExist()
+    {
+        var response = await _client.GetAsync("https://localhost:7033/api/v1/999");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task CreateEmployee_ShouldReturnSuccess_WhenDataIsValid()
     {
         // Arrange
@@ -77,7 +116,7 @@ public class EmployeeApiTests : IClassFixture<AppHostFixture>, IAsyncLifetime
     public async Task CreateEmployee_ShouldReturnBadRequest_WhenDataIsInvalid()
     {
         // Arrange
-        var invalidDto = new CreateEmployeeRequestDTO("", "", "", -1); // Dados inválidos
+        var invalidDto = new CreateEmployeeRequestDTO("", "", "", -1); 
 
         // Act
         var response = await _client.PostAsJsonAsync("https://localhost:7033/api/v1", invalidDto);
@@ -174,7 +213,7 @@ public class EmployeeApiTests : IClassFixture<AppHostFixture>, IAsyncLifetime
     public async Task DeleteEmployee_ShouldReturnNotFound_WhenEmployeeDoesNotExist()
     {
         // Act
-        var response = await _client.DeleteAsync("https://localhost:7033/api/v1/999"); // ID inexistente
+        var response = await _client.DeleteAsync("https://localhost:7033/api/v1/999"); 
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
